@@ -9,16 +9,16 @@
 #;
 ("PROBLEM:
 
-In this problem you will design another world program. In this program the changing 
-information will be more complex - your type definitions will involve arbitrary 
-sized data as well as the reference rule and compound data. But by doing your 
-design in two phases you will be able to manage this complexity. As a whole, this problem 
-will represent an excellent summary of the material covered so far in the course, and world 
+In this problem you will design another world program. In this program the changing
+information will be more complex - your type definitions will involve arbitrary
+sized data as well as the reference rule and compound data. But by doing your
+design in two phases you will be able to manage this complexity. As a whole, this problem
+will represent an excellent summary of the material covered so far in the course, and world
 programs in particular.
 
 This world is about spinning bears. The world will start with an empty screen. Clicking
 anywhere on the screen will cause a bear to appear at that spot. The bear starts out upright,
-but then rotates counterclockwise at a constant speed. Each time the mouse is clicked on the 
+but then rotates counterclockwise at a constant speed. Each time the mouse is clicked on the
 screen, a new upright bear appears and starts spinning.
 
 So each bear has its own x and y position, as well as its angle of rotation. And there are an
@@ -26,8 +26,8 @@ arbitrary amount of bears.
 
 To start, design a world that has only one spinning bear. Initially, the world will start
 with one bear spinning in the center at the screen. Clicking the mouse at a spot on the
-world will replace the old bear with a new bear at the new spot. You can do this part 
-with only material up through compound. 
+world will replace the old bear with a new bear at the new spot. You can do this part
+with only material up through compound.
 
 Once this is working you should expand the program to include an arbitrary number of bears.
 ")
@@ -165,8 +165,26 @@ Once this is working you should expand the program to include an arbitrary numbe
 ;; Template from PositionChange
 (define (xdx-reverse pc)
   (make-xdx
-   (xdx-value pc) 
+   (xdx-value pc)
    (- (xdx-change pc))))
+
+;; PositionChange -> PositionChange
+;; produce a vector with the same value and opposite direction
+(check-expect (xdx-freeze (make-xdx 3 -3)) (make-xdx 3 0))
+
+;; Template from PositionChange
+(define (xdx-freeze pc)
+  (make-xdx
+   (xdx-value pc)
+   0))
+
+;; PositionChange Number -> PositionChange
+;; produce a vector with the same value and a direction increased by change
+(check-expect (nudge (make-xdx 0 0) 5) (make-xdx 0 5))
+(check-expect (nudge (make-xdx 0 0) -3) (make-xdx 0 -3))
+
+(define (nudge pc change)
+  (make-xdx (xdx-value pc) (+ (xdx-change pc) change)))
 
 
 (define-struct 3pos (x y theta))
@@ -198,6 +216,7 @@ Once this is working you should expand the program to include an arbitrary numbe
              (make-xdx t dt)))
 
 (define SS2 (make-3pos/flat 300 1 300 -1 0 3))
+(define SS3 (make-3pos/flat 300 -1 300 1 0 -3))
 
 
 ;; SpriteState -> SpriteState
@@ -222,8 +241,10 @@ Once this is working you should expand the program to include an arbitrary numbe
    ws                        ; Sprite
    (on-tick   sprite-next)   ; Sprite -> Sprite
    (to-draw   render-sprite) ; Sprite -> Image
-   #;(on-mouse  handle-mouse)  ; Sprite Integer Integer MouseEvent -> Sprite
-   #;(on-key    handle-key)))  ; Sprite KeyEvent -> Sprite
+   (on-mouse  handle-mouse)  ; Sprite Integer Integer MouseEvent -> Sprite
+   (on-key    handle-key)    ; Sprite KeyEvent -> Sprite
+   (close-on-stop 5)         ; close window after 5 seconds
+   ))
 
 
 ;; SpriteState -> SpriteState
@@ -249,3 +270,117 @@ Once this is working you should expand the program to include an arbitrary numbe
    (xdx-value (3pos-x s))
    (xdx-value (3pos-y s))
    MTS))
+
+;; SpriteState -> SpriteState
+;; reverse all of the change vectors
+(check-expect (reverse-sprite SS2) SS3)
+
+;; Template from SpriteState
+(define (reverse-sprite 3p)
+  (make-3pos (xdx-reverse (3pos-x 3p))
+             (xdx-reverse (3pos-y 3p))
+             (xdx-reverse (3pos-theta 3p))))
+
+
+(define SS4 (make-3pos/flat 12 1 13 -1 6 3))
+(define SS4u (make-3pos/flat 12 1 13 -1 6 4))
+(define SS4o (make-3pos/flat 12 1 13 -1 6 2))
+(define SS4j (make-3pos/flat 12 0 13 -1 6 3))
+(define SS4l (make-3pos/flat 12 2 13 -1 6 3))
+(define SS4i (make-3pos/flat 12 1 13 -2 6 3))
+(define SS4k (make-3pos/flat 12 1 13  0 6 3))
+(define SS4-freeze (make-3pos/flat 12 0 13 0 6 0))
+
+;; SpriteState -> SpriteState
+;; nudge in the specified direction
+(check-expect (nudge-counterclockwise SS4) SS4u)
+(check-expect (nudge-clockwise SS4) SS4o)
+(check-expect (nudge-up SS4) SS4i)
+(check-expect (nudge-down SS4) SS4k)
+(check-expect (nudge-left SS4) SS4j)
+(check-expect (nudge-right SS4) SS4l)
+
+(define (nudge-clockwise s)
+  (make-3pos (3pos-x s)
+             (3pos-y s)
+             (nudge (3pos-theta s) -1)))
+
+(define (nudge-counterclockwise s)
+  (make-3pos (3pos-x s)
+             (3pos-y s)
+             (nudge (3pos-theta s) 1)))
+
+(define (nudge-up s)
+  (make-3pos (3pos-x s)
+             (nudge (3pos-y s) -1)
+             (3pos-theta s)))
+
+(define (nudge-down s)
+  (make-3pos (3pos-x s)
+             (nudge (3pos-y s) 1)
+             (3pos-theta s)))
+
+(define (nudge-left s)
+  (make-3pos (nudge (3pos-x s) -1)
+             (3pos-y s)
+             (3pos-theta s)))
+
+(define (nudge-right s)
+  (make-3pos (nudge (3pos-x s) 1)
+             (3pos-y s)
+             (3pos-theta s)))
+
+;; SpriteState -> SpriteState
+;; stop all motion for sprite
+(check-expect (freeze-sprite SS4) SS4-freeze)
+
+;(define (freeze-sprite s) s);stub
+(define (freeze-sprite s)
+  (make-3pos
+   (xdx-freeze (3pos-x s))
+   (xdx-freeze (3pos-y s))
+   (xdx-freeze (3pos-theta s))))
+
+
+;; ==============
+;; event handlers
+
+;; Sprite KeyEvent -> Sprite
+(check-expect (handle-key SS2 "q") (stop-with SS2))
+(check-expect (handle-key SS2 "r") (reverse-sprite SS2))
+(check-expect (handle-key SS4 " ") (freeze-sprite SS4))
+(check-expect (handle-key SS4 "u") SS4u)
+(check-expect (handle-key SS4 "o") SS4o)
+(check-expect (handle-key SS4 "i") SS4i)
+(check-expect (handle-key SS4 "k") SS4k)
+(check-expect (handle-key SS4 "j") SS4j)
+(check-expect (handle-key SS4 "l") SS4l)
+
+(check-expect (handle-key SS2 "a") SS2)
+
+;(define (handle-key ws ke) ws) ; stub
+
+;; template from HtDW
+(define (handle-key ws ke)
+  (cond [(key=? ke "r") (reverse-sprite ws)]
+        [(key=? ke " ") (freeze-sprite ws)]
+        [(key=? ke "u") (nudge-counterclockwise ws)]
+        [(key=? ke "o") (nudge-clockwise ws)]
+        [(key=? ke "i") (nudge-up ws)]
+        [(key=? ke "k") (nudge-down ws)]
+        [(key=? ke "j") (nudge-left ws)]
+        [(key=? ke "l") (nudge-right ws)]
+        [(key=? ke "q") (stop-with ws)]
+        [else ws]))
+
+;; Sprite Integer Integer MouseEvent -> Sprite
+;; reverse the direction of travel when mouse is clicked
+(check-expect (handle-mouse SS2 0 0 "button-down") (make-3pos/flat 0 0 0 0 0 3) )
+(check-expect (handle-mouse SS2 0 0 "move") SS2)
+
+;(define (handle-mouse ws x y me) ws) ; stub
+
+;; template from HtDW
+(define (handle-mouse ws x y me)
+  (cond [(mouse=? me "button-down") (make-3pos/flat x 0 y 0 0 3)]
+        [else ws]))
