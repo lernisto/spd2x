@@ -18,10 +18,12 @@ in the owlery.
     the total number of owls.
 ")
 
+;; Data Definitions
 
 ;; ListOfNumber is one of:
 ;; - empty
 ;; - (cons Number ListOfNumber)
+;; interp. each number represents the weight of an owl in grams
 (define LON1 empty)
 (define LON2 (cons 2 empty))
 (define LON3 (cons 3 LON2))
@@ -38,6 +40,8 @@ in the owlery.
 ;; - self-reference: (rest lon) is ListOfNumber
 
 
+;; Function Definitions
+
 ;; ListOfNumber -> Number
 ;; produce the sum of all Numbers in the List
 (check-expect (sum empty) 0)
@@ -53,7 +57,7 @@ in the owlery.
                  (sum (rest lon)))]))
 
 
-;; ListOfNumber -> Number
+;; ListOfNumber -> Natural
 ;; produce the count of all Numbers in the List
 (check-expect (count empty) 0)
 (check-expect (count (cons 3.5 empty)) 1)
