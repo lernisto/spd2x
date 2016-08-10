@@ -36,8 +36,8 @@ Once this is working you should expand the program to include an arbitrary numbe
 
 ;; =================
 ;; Constants:
-(define WIDTH 600)
-(define HEIGHT 200)
+(define WIDTH 800)
+(define HEIGHT 800)
 (define MTS (empty-scene WIDTH HEIGHT))
 (define RADIUS 40)
 (define SPRITE
@@ -175,6 +175,7 @@ Once this is working you should expand the program to include an arbitrary numbe
 (define SS0 (make-3pos (make-xdx 0 3) (make-xdx 0 1) (make-xdx  0 -3)))
 (define SS1 (make-3pos (make-xdx 3 3) (make-xdx 1 1) (make-xdx -3 -3)))
 
+#;
 (define (fn-for-3pos 3p)
   (... (fn-for-pc (3pos-x 3p))
        (fn-for-pc (3pos-y 3p))
@@ -185,6 +186,20 @@ Once this is working you should expand the program to include an arbitrary numbe
 ;; -- reference: 3pos-y is PositionChange
 ;; -- reference: 3pos-theta is PositionChange
 
+;; Number Number Number Number Number Number -> SpriteState
+;; a convenient constructor
+(check-expect (make-3pos/flat 0 3 0 1 0 -3) SS0)
+
+;(define (make-3pos/flat x dx y dy t dt) #f); stub
+;; Template from my head
+(define (make-3pos/flat x dx y dy t dt)
+  (make-3pos (make-xdx x dx)
+             (make-xdx y dy)
+             (make-xdx t dt)))
+
+(define SS2 (make-3pos/flat 300 1 300 -1 0 3))
+
+
 ;; SpriteState -> SpriteState
 ;; produce the next sprite state by applying xdx-next to each PositionChange
 (check-expect (sprite-next SS0) SS1)
@@ -193,7 +208,44 @@ Once this is working you should expand the program to include an arbitrary numbe
 ;; Template from SpriteState
 (define (sprite-next 3p)
   (make-3pos (xdx-next (3pos-x 3p))
-       (xdx-next (3pos-y 3p))
-       (xdx-next (3pos-theta 3p))))
+             (xdx-next (3pos-y 3p))
+             (xdx-next (3pos-theta 3p))))
 
-       
+
+;; =================
+;; World Functions:
+
+;; Sprite -> Sprite
+;; start the world with (main SS0)
+(define (main ws)
+  (big-bang
+   ws                        ; Sprite
+   (on-tick   sprite-next)   ; Sprite -> Sprite
+   (to-draw   render-sprite) ; Sprite -> Image
+   #;(on-mouse  handle-mouse)  ; Sprite Integer Integer MouseEvent -> Sprite
+   #;(on-key    handle-key)))  ; Sprite KeyEvent -> Sprite
+
+
+;; SpriteState -> SpriteState
+;; produce the next state for a single sprite
+;; !!! no bound checking
+#;(define next-sprite sprite-next) ;; stub for single sprite version
+
+;; SpriteState -> Image
+;; render the sprite onto the MTS
+(check-expect (render-sprite SS0)
+              (place-image
+               (rotate (modulo (xdx-value (3pos-theta SS0)) 360)  SPRITE)
+               (xdx-value (3pos-x SS0))
+               (xdx-value (3pos-y SS0))
+               MTS))
+
+;(define (render-sprite s) MTS);stub
+
+;; Template from SpriteState
+(define (render-sprite s)
+  (place-image
+   (rotate (modulo (xdx-value (3pos-theta s)) 360)  SPRITE)
+   (xdx-value (3pos-x s))
+   (xdx-value (3pos-y s))
+   MTS))
