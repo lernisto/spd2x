@@ -30,13 +30,15 @@ information in bar charts like this one:
 ;; =========
 ;; Constants
 
-(define BAR_WIDTH 30)
-(define CHART_HEIGHT 200)
-(define BAR_COLOR 'aliceblue)
-(define CHART_COLOR 'white)
-(define TEXT_SIZE 24)
-(define TEXT_COLOR 'darkblue)
-(define Y-SCALE 1/200) ;; TODO calculate this as CHART_HEIGHT/max-tuition
+(define BAR-WIDTH 30)
+(define CHART-HEIGHT 200)
+(define BAR-COLOR 'aliceblue)
+(define CHART-COLOR 'white)
+(define TEXT-SIZE 20)
+(define TEXT-COLOR 'darkblue)
+(define Y-SCALE 1/50) ;; TODO calculate this as CHART_HEIGHT/max-tuition
+
+(define EMPTY-CHART (square 0 'solid BAR-COLOR))
 
 ;; ================
 ;; Data Definitions
@@ -79,3 +81,37 @@ information in bar charts like this one:
 
 ;; =========
 ;; Functions
+
+;; ListOfSchool -> Image
+;; produce a bar chart of tuition for each school
+(check-expect (chart empty) EMPTY-CHART)
+(check-expect (chart (cons S3 empty)) (bar S3))
+(check-expect (chart (cons S2 (cons S3 empty))) (beside/align 'bottom (bar S2)(bar S3)))
+
+;(define (chart los) EMPTY-CHART);stub
+
+;; Template from ListOfSchool
+(define (chart los)
+  (cond [(empty? los) EMPTY-CHART]
+        [else
+         (beside/align 'bottom (bar (first los))
+              (chart (rest los)))]))
+
+
+;; School -> Image
+;; produce a bar representing the tuition of the school
+(check-expect (bar (make-school "A" 5000))
+              (overlay/align 'center 'bottom
+               (rotate 90 (text "A" TEXT-SIZE TEXT-COLOR))
+               (rectangle BAR-WIDTH (* 5000 Y-SCALE) 'outline 'black)
+               (rectangle BAR-WIDTH (* 5000 Y-SCALE) 'solid BAR-COLOR)
+               ))
+
+;(define (bar s) EMPTY-CHART); stub
+
+;; Template from School
+(define (bar s)
+  (overlay/align 'center 'bottom
+   (rotate 90 (text (school-name s) TEXT-SIZE TEXT-COLOR))
+   (rectangle BAR-WIDTH (* (school-tuition s) Y-SCALE) 'outline 'black)
+   (rectangle BAR-WIDTH (* (school-tuition s) Y-SCALE) 'solid BAR-COLOR)))
