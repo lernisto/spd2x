@@ -56,14 +56,13 @@ width times its height.
   (cond [(empty? loi) 0]
         [else
          (+ (image-area (first loi))
-              (total-area (rest loi)))]))
-
-
+            (total-area (rest loi)))]))
 
 ;; Image -> Number
 ;; produce a Number representing the area of the image (* width height)
 (check-expect (image-area I0) (* 40 40)) ; 1600
 (check-expect (image-area I1) (* 20 20)) ; 400
 
+;; Template from Image
 (define (image-area i)
   (* (image-width i) (image-height i)))
