@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname spinning-bears) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname spinning-bears2) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 ;; spinning-bears.rkt
 
 (require 2htdp/image)
@@ -50,6 +50,8 @@ Once this is working you should expand the program to include an arbitrary numbe
 (define MIN-Y (/ (image-height SPRITE) 2))
 (define MAX-Y (- WIDTH (/ (image-height SPRITE) 2)))
 (define CTR-Y (/ HEIGHT 2))
+
+(define QUIT-DELAY 3)
 
 ;; =================
 ;; Data definitions:
@@ -221,11 +223,11 @@ Once this is working you should expand the program to include an arbitrary numbe
 
 ;; SpriteState -> SpriteState
 ;; produce the next sprite state by applying xdx-next to each PositionChange
-(check-expect (sprite-next SS0) SS1)
+(check-expect (sprite-update SS0) SS1)
 
 ;(define (sprite-next s) s);stub
 ;; Template from SpriteState
-(define (sprite-next 3p)
+(define (sprite-update 3p)
   (make-3pos (xdx-next (3pos-x 3p))
              (xdx-next (3pos-y 3p))
              (xdx-next (3pos-theta 3p))))
@@ -236,40 +238,45 @@ Once this is working you should expand the program to include an arbitrary numbe
 
 ;; Sprite -> Sprite
 ;; start the world with (main SS0)
-(define (main ws)
+(define (sprite-main ws)
   (big-bang
    ws                        ; Sprite
-   (on-tick   sprite-next)   ; Sprite -> Sprite
-   (to-draw   render-sprite) ; Sprite -> Image
-   (on-mouse  handle-mouse)  ; Sprite Integer Integer MouseEvent -> Sprite
-   (on-key    handle-key)    ; Sprite KeyEvent -> Sprite
-   (close-on-stop 5)         ; close window after 5 seconds
+   (on-tick   sprite-update) ; Sprite -> Sprite
+   (to-draw   sprite-render) ; Sprite -> Image
+   (on-mouse  sprite-mouse)  ; Sprite Integer Integer MouseEvent -> Sprite
+   (on-key    sprite-key)    ; Sprite KeyEvent -> Sprite
+   (close-on-stop QUIT-DELAY); close window after a few seconds
    ))
 
 
-;; SpriteState -> SpriteState
-;; produce the next state for a single sprite
-;; !!! no bound checking
-#;(define next-sprite sprite-next) ;; stub for single sprite version
-
 ;; SpriteState -> Image
 ;; render the sprite onto the MTS
-(check-expect (render-sprite SS0)
+(check-expect (sprite-render SS0)
+              (sprite-render-on SS0 MTS))
+
+;(define (render-sprite s) MTS);stub
+
+;; Template from SpriteState
+(define (sprite-render s)
+  (sprite-render-on s MTS))
+
+;; SpriteState Image -> Image
+;; render the sprite onto the image
+(check-expect (sprite-render-on SS0 MTS)
               (place-image
                (rotate (modulo (xdx-value (3pos-theta SS0)) 360)  SPRITE)
                (xdx-value (3pos-x SS0))
                (xdx-value (3pos-y SS0))
                MTS))
 
-;(define (render-sprite s) MTS);stub
-
 ;; Template from SpriteState
-(define (render-sprite s)
+(define (sprite-render-on s scene)
   (place-image
    (rotate (modulo (xdx-value (3pos-theta s)) 360)  SPRITE)
    (xdx-value (3pos-x s))
    (xdx-value (3pos-y s))
-   MTS))
+   scene))
+
 
 ;; SpriteState -> SpriteState
 ;; reverse all of the change vectors
@@ -346,22 +353,22 @@ Once this is working you should expand the program to include an arbitrary numbe
 ;; event handlers
 
 ;; Sprite KeyEvent -> Sprite
-(check-expect (handle-key SS2 "q") (stop-with SS2))
-(check-expect (handle-key SS2 "r") (reverse-sprite SS2))
-(check-expect (handle-key SS4 " ") (freeze-sprite SS4))
-(check-expect (handle-key SS4 "u") SS4u)
-(check-expect (handle-key SS4 "o") SS4o)
-(check-expect (handle-key SS4 "i") SS4i)
-(check-expect (handle-key SS4 "k") SS4k)
-(check-expect (handle-key SS4 "j") SS4j)
-(check-expect (handle-key SS4 "l") SS4l)
+(check-expect (sprite-key SS2 "q") (stop-with SS2))
+(check-expect (sprite-key SS2 "r") (reverse-sprite SS2))
+(check-expect (sprite-key SS4 " ") (freeze-sprite SS4))
+(check-expect (sprite-key SS4 "u") SS4u)
+(check-expect (sprite-key SS4 "o") SS4o)
+(check-expect (sprite-key SS4 "i") SS4i)
+(check-expect (sprite-key SS4 "k") SS4k)
+(check-expect (sprite-key SS4 "j") SS4j)
+(check-expect (sprite-key SS4 "l") SS4l)
 
-(check-expect (handle-key SS2 "a") SS2)
+(check-expect (sprite-key SS2 "a") SS2)
 
-;(define (handle-key ws ke) ws) ; stub
+;(define (sprite-key ws ke) ws) ; stub
 
 ;; template from HtDW
-(define (handle-key ws ke)
+(define (sprite-key ws ke)
   (cond [(key=? ke "r") (reverse-sprite ws)]
         [(key=? ke " ") (freeze-sprite ws)]
         [(key=? ke "u") (nudge-counterclockwise ws)]
@@ -375,12 +382,115 @@ Once this is working you should expand the program to include an arbitrary numbe
 
 ;; Sprite Integer Integer MouseEvent -> Sprite
 ;; reverse the direction of travel when mouse is clicked
-(check-expect (handle-mouse SS2 0 0 "button-down") (make-3pos/flat 0 0 0 0 0 3) )
-(check-expect (handle-mouse SS2 0 0 "move") SS2)
+(check-expect (sprite-mouse SS2 0 0 "button-down") (make-3pos/flat 0 0 0 0 0 3) )
+(check-expect (sprite-mouse SS2 0 0 "move") SS2)
 
-;(define (handle-mouse ws x y me) ws) ; stub
+;(define (sprite-mouse ws x y me) ws) ; stub
 
 ;; template from HtDW
-(define (handle-mouse ws x y me)
+(define (sprite-mouse ws x y me)
   (cond [(mouse=? me "button-down") (make-3pos/flat x 0 y 0 0 3)]
         [else ws]))
+
+
+
+
+
+
+
+;; WorldState is one of:
+;; - empty
+;; - (cons SpriteState WorldState)
+(define WS0 empty)
+(define WS1 (cons SS4 (cons SS3 empty)))
+
+#;
+(define (fn-for-ws ws)
+  (cond [(empty? ws) (...)]
+        [else
+         (... (fn-for-3pos (first ws))
+              (fn-for-ws (rest ws)))]))
+;; Template rules used:
+;; - one of: 2 cases
+;; - simple atomic: empty
+;; - compound: (cons SpriteState WorldState)
+;; - reference: (first ws) is SpriteState
+;; - self-reference: (rest ws) is WorldState
+
+;; WorldState -> WorldState
+;; apply sprite-next to all members
+;; !!!
+(check-expect (world-update WS0) WS0)
+(check-expect (world-update WS1)
+              (cons (sprite-update (first WS1))
+                    (cons (sprite-update (second WS1))
+                          empty)))
+
+
+;(define (world-update ws) ws);stub
+;; Template from WorldState
+(define (world-update ws)
+  (cond [(empty? ws) ws]
+        [else
+         (cons
+          (sprite-update (first ws))
+          (world-update (rest ws)))]))
+
+;; WorldState -> Image
+;; render all sprites into MTS
+;; !!!
+(check-expect (world-render WS0) MTS)
+(check-expect (world-render WS1)
+              (sprite-render-on (first WS1)
+                                (sprite-render-on (second WS1)
+                                                  MTS)))
+
+;(define (world-render ws) MTS); stub
+;; Template from WorldState
+(define (world-render ws)
+  (cond [(empty? ws) MTS]
+        [else
+         (sprite-render-on (first ws)
+                           (world-render (rest ws)))]))
+
+;; WorldState Integer Integer MouseEvent -> WorldState
+;; create a new sprite at the mouse position
+(check-expect (world-mouse WS0 60 70 "button-down")
+              (cons (make-3pos/flat 60 0 70 0 0 3) WS0))
+(check-expect (world-mouse WS1 80 90 "button-down")
+              (cons (make-3pos/flat 80 0 90 0 0 3) WS1))
+
+;(define (world-mouse ws x y me) ws);stub
+;; Template from WorldState
+(define (world-mouse ws x y me)
+  (cond [(mouse=? me "button-down") (cons (make-3pos/flat x 0 y 0 0 3) ws)]
+        [else ws]))
+
+;; WorldState KeyEvent -> WorldState
+;; control the top-most sprite
+;; !!!
+(check-expect (world-key WS0 " ") WS0)
+(check-expect (world-key WS0 "q") (stop-with WS0))
+(check-expect (world-key (cons SS4 empty) " ") (cons SS4-freeze empty))
+
+;(define (world-key ws ke) ws); stub
+;; Template from WorldState
+(define (world-key ws ke)
+  (cond [(key=? ke "q") (stop-with ws)]
+        [(empty? ws) ws]
+        [else
+         (cons (sprite-key (first ws) ke)
+               (rest ws))]))
+
+
+;; WorldState -> WorldState
+;; start the world with (world-main WS0)
+(define (world-main ws)
+  (big-bang
+   ws                        ; WorldState
+   (on-tick   world-update)  ; WorldState -> WorldState
+   (to-draw   world-render)  ; WorldState -> Image
+   (on-mouse  world-mouse)   ; WorldState Integer Integer MouseEvent -> WorldState
+   (on-key    world-key)     ; WorldState KeyEvent -> WorldState
+   (close-on-stop QUIT-DELAY); close window after a few seconds
+   ))
