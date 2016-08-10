@@ -53,8 +53,17 @@ the list includes \"UBC\".
 ;(define (contains-ubc? los) #f);stub
 
 ;; template from ListofString
+#;
 (define (contains-ubc? los)
   (cond [(empty? los) #f]
         [(string=? "UBC" (first los)) #t]
         [else (contains-ubc? (rest los))]
         ))
+
+(define (contains-ubc? los)
+  (cond [(empty? los) #f]
+        [else
+         (if (string=? "UBC" (first los))
+             #t
+             (contains-ubc? (rest los)))]))
+
