@@ -13,6 +13,27 @@ your favorite Quidditch teams. (http://www.internationalquidditch.org/).
 Design a data definition to represent a list of Quidditch teams.
 ")
 
+;; ListofString is one of:
+;;  - empty
+;;  - (cons String ListofString)
+;; interp. a list of String
+(define LOS1 empty)
+(define LOS2 (cons "McGill" empty))
+(define LOS3 (cons "UBC" LOS2))
+
+#;
+(define (fn-for-los los)
+  (cond [(empty? los) (...)]
+        [else
+         (... (first los)
+              (fn-for-los (rest los))
+              )]))
+;; Template rules used:
+;;  - one of: 2 cases
+;;  - atomic distinct: empty
+;;  - compound: (cons String ListofString)
+;;  - self-reference: (rest los) is ListofString
+
 #;
 ("
 PROBLEM:
@@ -21,4 +42,19 @@ We want to know whether your list of favorite Quidditch teams includes
 UBC! Design a function that consumes ListOfString and produces true if 
 the list includes \"UBC\".
 ")
+;; ListofString -> Boolean
+;; produce true iif los contains "UBC"
+(check-expect (contains-ubc? LOS1) #f)
+(check-expect (contains-ubc? LOS2) #f)
+(check-expect (contains-ubc? LOS3) #t)
+(check-expect (contains-ubc? (cons "McGill" (cons "UBC" empty))) #t)
 
+
+;(define (contains-ubc? los) #f);stub
+
+;; template from ListofString
+(define (contains-ubc? los)
+  (cond [(empty? los) #f]
+        [(string=? "UBC" (first los)) #t]
+        [else (contains-ubc? (rest los))]
+        ))
