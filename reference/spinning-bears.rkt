@@ -43,151 +43,127 @@ Once this is working you should expand the program to include an arbitrary numbe
 (define SPRITE
   (bitmap "bear.png")
   #;(overlay
-   (radial-star 5 (* RADIUS 1/2) (* RADIUS 1) 'solid 'white)
-   (circle RADIUS 'solid 'blue)))
+     (radial-star 5 (* RADIUS 1/2) (* RADIUS 1) 'solid 'white)
+     (circle RADIUS 'solid 'blue)))
 (define MIN-X (/ (image-width SPRITE) 2))
 (define MAX-X (- WIDTH (/ (image-width SPRITE) 2)))
+(define MIN-Y (/ (image-height SPRITE) 2))
+(define MAX-Y (- WIDTH (/ (image-height SPRITE) 2)))
 (define CTR-Y (/ HEIGHT 2))
 
 ;; =================
 ;; Data definitions:
 
-(define-struct sprite (x y θ dx dy dθ))
-;; Sprite is (make-sprite x y θ dx dy dθ )
-;; - x Natural[0,WIDTH) screen x-coordinate in pixels
-;; - y Natural[0,HEIGHT) screen y-coordinate in pixels
-;; - θ - Number[0,360) angle of rotation in degrees
-;; - dx Integer change in x in pixels per tick
-;; - dy Integer change in y in pixels per tick
-;; - dθ - Number[0,360) change in θ degrees per tick
-(define S0 (make-sprite MIN-X CTR-Y 0 3 0 -3))
-(define S1 (make-sprite MAX-X CTR-Y 0 -3 0  3))
-(define S2 (make-sprite MIN-X 0 0 3 3 -3))
-
+(define-struct interval (low high))
+;; Interval is (make-interval Number Number)
+;; interp. a lower and upper bound for Number
+(define IX (make-interval MIN-X MAX-Y))
+(define IY (make-interval MIN-Y MAX-Y))
 #;
-(define (fn-for-sprite s)
-  (...
-   (sprite-x s) ; Natural[0,WIDTH]
-   (sprite-y s) ; Natural[0,HEIGHT]
-   (sprite-θ s) ; Number[0,360)
-   (sprite-dx s) ; Integer
-   (sprite-dy s) ; Integer
-   (sprite-dθ s) ; Number[0,360)
-   ))
-;; template rules used
-;; - compound: 6 fields
-;; - simple atomic: Natural[0,WIDTH]
-;; - simple atomic: Natural[0,HEIGHT]
-;; - simple atomic: Number[0,360)
-;; - simple atomic: Integer
-;; - simple atomic: Integer
-;; - simple atomic: Number[0,360)
+(define (fn-for-interval int)
+  (... (interval-low int)
+       (interval-high int)))
+;; Template rules used:
+;; -- compound: 2 fields
 
-;; =================
-;; Functions:
+;; Functions for Interval
 
-;; Sprite -> Sprite
-;; start the world with (main S0)
-(define (main ws)
-  (big-bang
-   ws                        ; Sprite
-   (on-tick   next-sprite)   ; Sprite -> Sprite
-   (to-draw   render-sprite) ; Sprite -> Image
-   (on-mouse  handle-mouse)  ; Sprite Integer Integer MouseEvent -> Sprite
-   (on-key    handle-key)))  ; Sprite KeyEvent -> Sprite
+;; Interval -> Number
+;; produce the midpoint of the low and high values
+(check-expect (midpoint (make-interval 0 4)) 2)
+(check-expect (midpoint (make-interval -4 4)) 0)
+(check-expect (midpoint (make-interval 2 4)) 3)
 
-;; Sprite -> Sprite
-;; produce the next position for the sprite: x+=dx
-;;   reverse direction when reaching a fence
-(check-expect (next-sprite (make-sprite 80 0 0 3 2 -3)) (make-sprite 83 2 357 3 2 -3)) ;; normal motion
-(check-expect (next-sprite (make-sprite MAX-X CTR-Y 0  3 0 -3)) (make-sprite MAX-X CTR-Y 0 -3 0 3)) ;; reverse at right end
-(check-expect (next-sprite (make-sprite MIN-X CTR-Y 0 -3 0 -3)) (make-sprite MIN-X CTR-Y 0 3 0 3)) ;; reverse at left end
+;(define (midpoint i) 0);stub
 
-;(define (next-sprite ws) ws) ;stub
+;; Template from Interval
+(define (midpoint int)
+  (* 1/2 (+ (interval-low int)
+            (interval-high int))))
 
-;; template from Sprite
-(define (next-sprite s)
-  (cond
-    [(> (+ (sprite-x s) (sprite-dx s)) MAX-X)
-     (make-sprite
-      MAX-X
-      (+ (sprite-y s) (sprite-dy s))
-      (sprite-θ s) ;; !!! not exact
-      (- (sprite-dx s))
-      (sprite-dy s)
-      (- (sprite-dθ s))
-      )]
-    [(< (+ (sprite-x s) (sprite-dx s)) MIN-X)
-     (make-sprite
-      MIN-X
-      (+ (sprite-y s) (sprite-dy s))
-      (sprite-θ s) ;; !!! not exact
-      (- (sprite-dx s))
-      (sprite-dy s)
-      (- (sprite-dθ s))
-      )]
-    [else
-     (make-sprite
-      (+ (sprite-x s) (sprite-dx s))
-      (+ (sprite-y s) (sprite-dy s))
-      (modulo (+ (sprite-θ s) (sprite-dθ s)) 360)
-      (sprite-dx s)
-      (sprite-dy s)
-      (sprite-dθ s)
-      )]
-    ))
+;; Interval Number -> Boolean
+;; produce true if number is below the lower bound
+(check-expect (below? (make-interval 100 200) 0 ) #t)
+(check-expect (below? (make-interval 100 200) 150 ) #f)
+(check-expect (below? (make-interval 100 200) 300 ) #f)
+
+;(define (below? i n) #f);stub
+;; Template from Interval
+(define (below? int n)
+  (< n (interval-low int)))
+
+;; Interval Number -> Boolean
+;; produce true if number is between (inclusive) the lower and upper bounds
+(check-expect (within? (make-interval 100 200) 0 ) #f)
+(check-expect (within? (make-interval 100 200) 100 ) #t)
+(check-expect (within? (make-interval 100 200) 150 ) #t)
+(check-expect (within? (make-interval 100 200) 200 ) #t)
+(check-expect (within? (make-interval 100 200) 300 ) #f)
+
+;; Template from Interval
+(define (within? int n)
+  (and (>= n (interval-low int))
+       (<= n (interval-high int))))
 
 
-;; Sprite -> Image
-;; place the sprite image at x,CTR-Y on MTS
-(check-expect (render-sprite S0) (place-image SPRITE (sprite-x S0) CTR-Y MTS))
+;; Interval Number -> Boolean
+;; produce true if number is between (exclusive) the lower and upper bounds
+(check-expect (between? (make-interval 100 200) 0 ) #f)
+(check-expect (between? (make-interval 100 200) 100 ) #f)
+(check-expect (between? (make-interval 100 200) 150 ) #t)
+(check-expect (between? (make-interval 100 200) 200 ) #f)
+(check-expect (between? (make-interval 100 200) 300 ) #f)
 
-;(define (render-sprite ws) MTS); stub
+;; Template from Interval
+(define (between? int n)
+  (and (> n (interval-low int))
+       (< n (interval-high int))))
 
-;; template from Sprite
-(define (render-sprite s)
-  (place-image (rotate (sprite-θ s) SPRITE)
-               (sprite-x s)
-               (sprite-y s)
-               MTS))
 
-;; Sprite KeyEvent -> Sprite
-;; restart the animation when ' ' is pressed
-(check-expect (handle-key S1 " ") S0)
-(check-expect (handle-key S1 "a") S1)
+;; Interval Number -> Boolean
+;; produce true if number is above the upper bound
+(check-expect (above? (make-interval 100 200) 0 ) #f)
+(check-expect (above? (make-interval 100 200) 150 ) #f)
+(check-expect (above? (make-interval 100 200) 300 ) #t)
 
-;(define (handle-key ws ke) ws) ; stub
+;; Template from Interval
+(define (above? int n)
+  (> n (interval-high int)))
 
-;; template from HtDW
-(define (handle-key ws ke)
-  (cond [(key=? ke " ") S0]
-        [else ws]))
+;; !!! (all-within? Interval Interval) -> Boolean
+;; !!! (interval-intersect Interval Interval) -> Interval
+;; !!! (interval-union? ListOfInterval) -> ListOfInterval
+;; !!! interval trees
 
-;; Sprite Integer Integer MouseEvent -> Sprite
-;; reverse the direction of travel when mouse is clicked
-(check-expect (handle-mouse S1 0 0 "button-down") (reverse-sprite S1))
-(check-expect (handle-mouse S1 0 0 "move") S1)
 
-;(define (handle-mouse ws x y me) ws) ; stub
+(define-struct xdx (value change))
+;; PositionChange is (make-xdx value change)
+;; interp. an instantaneous value and the change in that value in units per second
+(define PC0 (make-xdx 3 -3))
+(define PC1 (make-xdx 0 1))
 
-;; template from HtDW
-(define (handle-mouse ws x y me)
-  (cond [(mouse=? me "button-down") (reverse-sprite ws)]
-        [else ws]))
+(define (fn-for-pc pc)
+  (.. (xdx-value pc)
+      (xdx-change pc)))
+;; Template rules used:
+;; -- compound: 2 fields
 
-;; Sprite -> Sprite
-;; reverse the direction of travel of the sprite
-(check-expect (reverse-sprite (make-sprite 0 0 0 1 0 -1)) (make-sprite 0 0 0 -1 0 1))
+;; PositionChange -> PositionChange
+;; produce the next value in the progression
+(check-expect (xdx-next (make-xdx 3 -3)) (make-xdx 0 -3))
 
-;(define (reverse-sprite s) s);stub
+;; Template from PositionChange
+(define (xdx-next pc)
+  (make-xdx
+   (+ (xdx-value pc) (xdx-change pc))
+   (xdx-change pc)))
 
-;; template from Sprite
-(define (reverse-sprite s)
-  (make-sprite
-   (sprite-x s)
-   (sprite-y s)
-   (sprite-θ s)
-   (- (sprite-dx s))
-   (sprite-dy s)
-   (- (sprite-dθ s))
-   ))
+;; PositionChange -> PositionChange
+;; produce a vector with the same value and opposite direction
+(check-expect (xdx-reverse (make-xdx 3 -3)) (make-xdx 3 3))
+
+;; Template from PositionChange
+(define (xdx-reverse pc)
+  (make-xdx
+   (xdx-value pc) 
+   (- (xdx-change pc))))
