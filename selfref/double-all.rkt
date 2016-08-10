@@ -39,4 +39,15 @@ PROBLEM:
 Design a function that consumes a list of numbers and doubles every number 
 in the list. Call it double-all.
 ")
+;; ListOfNumber -> ListOfNumber
+;; produce a copy of the list with each element doubled
+(check-expect (double-all empty) empty)
+(check-expect (double-all (cons 6 (cons 3 empty))) (cons 12 (cons 6 empty)))
 
+;(define (double-all lon) lon);stub
+;; Template from ListOfNumber
+(define (double-all lon)
+  (cond [(empty? lon) empty]
+        [else
+         (cons (* 2 (first lon))
+              (double-all (rest lon)))]))
