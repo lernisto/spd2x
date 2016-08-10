@@ -167,3 +167,33 @@ Once this is working you should expand the program to include an arbitrary numbe
   (make-xdx
    (xdx-value pc) 
    (- (xdx-change pc))))
+
+
+(define-struct 3pos (x y theta))
+;; SpriteState is (make-3pos x y theta)
+;; interp. value and change per second for x coordinate, y coordinate, and orientation
+(define SS0 (make-3pos (make-xdx 0 3) (make-xdx 0 1) (make-xdx  0 -3)))
+(define SS1 (make-3pos (make-xdx 3 3) (make-xdx 1 1) (make-xdx -3 -3)))
+
+(define (fn-for-3pos 3p)
+  (... (fn-for-pc (3pos-x 3p))
+       (fn-for-pc (3pos-y 3p))
+       (fn-for-pc (3pos-theta 3p))))
+;; Template rules used:
+;; -- compound: 3 fields
+;; -- reference: 3pos-x is PositionChange
+;; -- reference: 3pos-y is PositionChange
+;; -- reference: 3pos-theta is PositionChange
+
+;; SpriteState -> SpriteState
+;; produce the next sprite state by applying xdx-next to each PositionChange
+(check-expect (sprite-next SS0) SS1)
+
+;(define (sprite-next s) s);stub
+;; Template from SpriteState
+(define (sprite-next 3p)
+  (make-3pos (xdx-next (3pos-x 3p))
+       (xdx-next (3pos-y 3p))
+       (xdx-next (3pos-theta 3p))))
+
+       
