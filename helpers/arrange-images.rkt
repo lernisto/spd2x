@@ -29,14 +29,21 @@ here, and set the stage for a more elaborate version later.
 ;; - empty
 ;; - (cons Image ListOfImage)
 ;; inter. a list of Image
-(define I1 (circle 10 'solid 'blue))
-(define I2 (square 20 'solid 'red))
-(define I3 (triangle 23 'solid 'green))
+(define I1 (square 20 'solid 'red))
+(define I2 (triangle 23 'solid 'green))
+(define I3 (circle 11 'solid 'blue))
+
+(define R1 (rectangle 20 10 'solid 'red))
+(define R2 (rectangle 20 20 'solid 'green))
+(define R3 (rectangle 20 30 'solid 'blue))
+
 
 (define L1 empty)
-(define L2 (cons I1 (cons I2 (cons I3 empty))))
-(define L3 (list I1 I2 I3))
+(define LI (list I1 I2 I3))
+(define LR (list R1 R2 R3))
+(define L2 (list I3 I2 I1)) 
 
+#;
 (define (fn-for-loi loi)
   (cond [(empty? loi) (...)]
         [else
@@ -53,5 +60,82 @@ here, and set the stage for a more elaborate version later.
 ;; Functions
 
 
+;; ListOfImage -> Image
+;; lay out images left to right in increasing order of size
+(check-expect (arrange-images L2) (layout-images (sort-images L2)))
+
+;; Template from FunctionComposition
+(define (arrange-images loi)
+  (layout-images (sort-images loi)))
+
+
+
 ;; ListOfImage -> ListOfImage
-;; lay out 
+;; lay out images left to right
+(check-expect (layout-images L1) IBLANK)
+(check-expect (layout-images (list I3 I1 I2))
+              (beside I3 I1 I2 IBLANK))
+(check-expect (layout-images (list I3 I2 I1))
+              (beside I3 I2 I1 IBLANK))
+
+(define (layout-images loi)
+  (cond [(empty? loi) IBLANK]
+        [else
+         (beside (first loi)
+                 (layout-images (rest loi)))]))
+
+
+
+;; ListOfImage -> ListOfImage
+;; sort images in increasing order of size
+;; !!!
+(check-expect (sort-images empty) empty)
+(check-expect (sort-images (list R3 R2))
+              (list R2 R3))
+(check-expect (sort-images (list R2 R3))
+              (list R2 R3))
+(check-expect (sort-images (list R2 R3 R1))
+              (list R1 R2 R3))
+
+;(define (sort-images loi) loi) ; stub
+
+(define (sort-images loi)
+  (cond [(empty? loi) empty]
+        [else
+         (insert (first loi)
+                 (sort-images (rest loi)))]))
+
+;; Image ListOfImage -> ListOfImage
+;; produce new list with image in proper position (increasing order of area)
+;; ASSUME: loi is already sorted
+;; !!!
+;(define (insert img loi) (cons img loi));stub
+(check-expect (insert I1 empty) (list I1))
+(check-expect (insert I2 (list I1)) (list I1 I2))
+(check-expect (insert I1 (list I2)) (list I1 I2))
+(check-expect (insert I2 (list I1 I3)) (list I1 I2 I3))
+
+;(define (insert img loi) (cons img loi));stub
+;; !!! is this a bubble sort? O(n²)
+(define (insert img loi)
+  (cond [(empty? loi) (cons img empty)]
+        [else
+         (if (larger? img (first loi))
+             (cons (first loi) (insert img (rest loi)))
+             (cons img loi))]))
+
+;; Image Image -> Boolean
+;; produce #t if first image smaller than second
+(check-expect (larger? (rectangle 3 4 'solid 'red) (rectangle 2 6 'solid 'red)) #f)
+(check-expect (larger? (rectangle 4 4 'solid 'red) (rectangle 2 6 'solid 'red)) #t)
+(check-expect (larger? (rectangle 3 5 'solid 'red) (rectangle 2 6 'solid 'red)) #t)
+(check-expect (larger? (rectangle 3 4 'solid 'red) (rectangle 3 6 'solid 'red)) #f)
+(check-expect (larger? (rectangle 3 4 'solid 'red) (rectangle 2 7 'solid 'red)) #f)
+
+(define (larger? a b)
+  (> (image-area a) (image-area b)))
+
+;; Image -> Natural
+;; produce the area of the image (height*width)
+(define (image-area img)
+  (* (image-height img) (image-width img)))
