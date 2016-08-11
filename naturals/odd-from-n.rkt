@@ -12,4 +12,20 @@
  Note that there is a primitive function, odd?, that produces true if a natural number is odd."
 )
 
+;; Natural -> ListOfNatural
+;; produce a list of odd numbers less than or equal to n
+(check-expect (odd-from-n 0) empty)
+(check-expect (odd-from-n 1) (cons 1 empty))
+(check-expect (odd-from-n 2) (cons 1 empty))
+(check-expect (odd-from-n 3) (cons 3 (cons 1 empty)))
 
+;(define (odd-from-n n) empty);stub
+
+;; Template from Natural
+(define (odd-from-n n)
+  (cond [(zero? n) empty]
+        [(even? n) (odd-from-n (sub1 n))]
+        [else
+         (cons n (odd-from-n (sub1 n)))]))
+
+;; !!! this implementation runs in exponential time
