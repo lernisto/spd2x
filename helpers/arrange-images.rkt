@@ -17,3 +17,41 @@ here, and set the stage for a more elaborate version later.
 (B) Design a function called arrange-images that consumes an arbitrary number
     of images and lays them out left-to-right in increasing order of size.
 ")
+
+;; =========
+;; Constants
+(define IBLANK (square 0 'solid 'white))
+
+;; ================
+;; Data Definitions
+
+;; ListOfImage is one of:
+;; - empty
+;; - (cons Image ListOfImage)
+;; inter. a list of Image
+(define I1 (circle 10 'solid 'blue))
+(define I2 (square 20 'solid 'red))
+(define I3 (triangle 23 'solid 'green))
+
+(define L1 empty)
+(define L2 (cons I1 (cons I2 (cons I3 empty))))
+(define L3 (list I1 I2 I3))
+
+(define (fn-for-loi loi)
+  (cond [(empty? loi) (...)]
+        [else
+         (... (first loi)
+              (fn-for-loi (rest loi)))]))
+;; Template rules used
+;; - one of: 2 cases
+;; - atomic distinct: empty
+;; - compound: (cons Image ListOfImage)
+;; - self ref: (rest loi) is ListOfImage
+
+
+;; =========
+;; Functions
+
+
+;; ListOfImage -> ListOfImage
+;; lay out 
