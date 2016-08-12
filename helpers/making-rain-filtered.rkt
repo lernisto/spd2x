@@ -1,10 +1,10 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname making-rain-filtered) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+#reader(lib "htdp-intermediate-reader.ss" "lang")((modname making-rain-filtered) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/image)
 (require 2htdp/universe)
 
-;; making-rain-filtered-starter.rkt
+;; making-rain-filtered.rkt
 
 #;
 ("
@@ -21,9 +21,9 @@ these rules to split out helpers:
   - function composition
   - reference
   - knowledge domain shift
-  
-  
-NOTE: This is a fairly long problem.  While you should be getting more comfortable with 
+
+
+NOTE: This is a fairly long problem.  While you should be getting more comfortable with
 world problems there is still a fair amount of work to do here. Our solution has 9
 functions including main. If you find it is taking you too long then jump ahead to the
 next homework problem and finish this later.
@@ -36,13 +36,13 @@ next homework problem and finish this later.
 ;; Constants:
 
 (define WIDTH  300)
-(define HEIGHT 300)
+(define HEIGHT 400)
 
 (define SPEED 1)
 
-(define DROP (ellipse 4 8 "solid" "blue"))
+(define SPRITE (ellipse 4 8 'solid 'blue))
 
-(define MTS (rectangle WIDTH HEIGHT "solid" "light blue"))
+(define MTS (rectangle WIDTH HEIGHT 'solid "light blue"))
 
 ;; =================
 ;; Data definitions:
@@ -55,7 +55,7 @@ next homework problem and finish this later.
 
 #;
 (define (fn-for-drop d)
-  (... (drop-x d) 
+  (... (drop-x d)
        (drop-y d)))
 
 ;; Template Rules used:
@@ -92,23 +92,103 @@ next homework problem and finish this later.
 (define (main lod)
   (big-bang lod
             (on-mouse handle-mouse)   ; ListOfDrop Integer Integer MouseEvent -> ListOfDrop
-            (on-tick  next-drops)     ; ListOfDrop -> ListOfDrop
-            (to-draw  render-drops))) ; ListOfDrop -> Image
+            (on-tick  world-next)     ; ListOfDrop -> ListOfDrop
+            (to-draw  world-render))) ; ListOfDrop -> Image
 
 
 ;; ListOfDrop Integer Integer MouseEvent -> ListOfDrop
 ;; if mevt is "button-down" add a new drop at that position
+(check-expect (handle-mouse empty 30 34 "button-down") (new-drop empty 30 34))
+(check-expect (handle-mouse empty 30 34 "move") empty)
+
+;(define (handle-mouse lod x y mevt) empty) ; stub
+
+(define (handle-mouse ws x y mevt)
+  (cond [(mouse=? mevt "button-down") (new-drop ws x y)]
+        [else ws]))
+
+;; ListOfDrop Integer Integer -> ListOfDrop
+;; create a new drop and add it to the list
+;; (domain shift)
+(check-expect (new-drop empty 30 34) (cons (make-drop 30 34) empty))
+
+(define (new-drop lod x y)
+  (cons (make-drop x y) lod))
+
+
+
+;; List Predicate -> List
+;; produce a new list with matching elements removed
+(check-expect (filter-drop odd? empty) empty)
+(check-expect (filter-drop odd? (list 1 2 3)) (list 2))
+
+(define (filter-drop drop? lod)
+  (cond [(empty? lod) empty]
+        [else
+         (if (drop? (first lod))
+             (filter-drop drop? (rest lod))
+             (cons (first lod)
+                   (filter-drop drop? (rest lod))))]))
+
+
+;; Drop -> Boolean
+;; produce true if the drop is off the screen
 ;; !!!
-(define (handle-mouse lod x y mevt) empty) ; stub
+(check-expect (off-screen? (make-drop 3 6)) #f)
+(check-expect (off-screen? (make-drop 4 HEIGHT)) #f)
+(check-expect (off-screen? (make-drop 4 (add1 HEIGHT))) #t)
+
+(define (off-screen? drop) (> (drop-y drop) HEIGHT))
+
+;; Drop -> Drop
+;; move the drop to the next position
+(check-expect (move-drop (make-drop 3 6))
+              (make-drop 3 (+ 6 SPEED)))
+
+(define (move-drop d)
+  (make-drop (drop-x d)
+             (+ SPEED (drop-y d))))
+
+
+;; ListOfDrop -> ListOfDrop
+;; advance each drop to the next position
+(check-expect (move-drops empty) empty)
+(check-expect (move-drops (list (make-drop 3 6))) (list (make-drop 3 (+ 6 SPEED))))
+
+(define (move-drops lod)
+  (cond [(empty? lod) empty]
+        [else
+         (cons (move-drop (first lod))
+               (move-drops (rest lod)))]))
 
 
 ;; ListOfDrop -> ListOfDrop
 ;; produce filtered and ticked list of drops
-;; !!!
-(define (next-drops lod)empty) ; stub
+;; (composition)
+(check-expect (world-next empty) empty)
+(check-expect (world-next
+               (list (make-drop 3 6)
+                     (make-drop 12 HEIGHT)))
+              (list (make-drop 3 (+ 6 SPEED))))
+
+(define (world-next lod)
+  (filter-drop off-screen? (move-drops lod)))
 
 
 ;; ListOfDrop -> Image
 ;; Render the drops onto MTS
-;; !!!
-(define (render-drops lod) MTS) ; stub
+(check-expect (world-render empty) MTS)
+(check-expect (world-render (list (make-drop 3 6) (make-drop 12 17)))
+              (place-image SPRITE 3 6
+                           (place-image SPRITE 12 17
+                                        MTS)))
+
+
+;(define (world-render lod) MTS) ; stub
+(define (world-render lod)
+  (cond [(empty? lod) MTS]
+        [else
+         (place-image SPRITE
+                      (drop-x (first lod))
+                      (drop-y (first lod))
+                      (world-render (rest lod)))]))
